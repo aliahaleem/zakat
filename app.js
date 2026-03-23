@@ -49,6 +49,8 @@ const App = (() => {
         preciousMetals: [],
         receivables: [],
         liabilities: [],
+        recipients: [],
+        distributionPlan: null,
         zakatPayments: [],
       };
     }
@@ -120,6 +122,10 @@ const App = (() => {
       const content = gist.files?.[GIST_FILENAME]?.content;
       if (!content) throw new Error('File not found in Gist');
       data = JSON.parse(content);
+      const pullYears = Object.keys(data).filter(k => /^\d{4}$/.test(k)).sort().reverse();
+      if (pullYears.length > 0 && !pullYears.includes(String(currentYear))) {
+        currentYear = parseInt(pullYears[0]);
+      }
       ensureYear(currentYear);
       saveLocal();
       renderAll();
@@ -173,6 +179,10 @@ const App = (() => {
       try {
         const imported = JSON.parse(e.target.result);
         data = imported;
+        const dataYears = Object.keys(data).filter(k => /^\d{4}$/.test(k)).sort().reverse();
+        if (dataYears.length > 0 && !dataYears.includes(String(currentYear))) {
+          currentYear = parseInt(dataYears[0]);
+        }
         ensureYear(currentYear);
         saveLocal();
         renderAll();
@@ -357,16 +367,284 @@ const App = (() => {
 
   function addPayment() {
     const form = document.getElementById('zakat-payment-form');
+    const selectRecipient = form.querySelector('[name="zk-pay-recipient-select"]').value;
+    const customRecipient = form.querySelector('[name="zk-pay-recipient"]').value.trim();
+    const recipient = selectRecipient || customRecipient;
     const item = {
       id: Date.now().toString(36),
       date: form.querySelector('[name="zk-pay-date"]').value,
-      recipient: form.querySelector('[name="zk-pay-recipient"]').value.trim(),
+      recipient,
       amount: parseFloat(form.querySelector('[name="zk-pay-amount"]').value) || 0,
+      method: form.querySelector('[name="zk-pay-method"]').value,
     };
     if (!item.date || !item.recipient) return;
     yd().zakatPayments.push(item);
     markDirty(); renderPayments();
     form.querySelectorAll('input').forEach(i => i.value = '');
+    form.querySelector('[name="zk-pay-recipient-select"]').value = '';
+    form.querySelector('[name="zk-pay-method"]').value = '';
+  }
+
+  // ── Recipients ──────────────────────────────────────────────────
+
+  const METHOD_LABELS = {
+    'credit-card': 'Credit Card', 'e-transfer': 'E-Transfer', 'paypal': 'PayPal',
+    'bank-transfer': 'Bank Transfer', 'cash': 'Cash', 'cheque': 'Cheque',
+    'launchgood': 'LaunchGood', 'gofundme': 'GoFundMe', 'other': 'Other',
+  };
+
+  const CAT_LABELS = {
+    'international-charity': 'International Charity', 'local-masjid': 'Local Masjid',
+    'local-charity': 'Local Charity', 'online-platform': 'Online Platform',
+    'individual': 'Individual / Family', 'other': 'Other',
+  };
+
+  function addRecipient() {
+    const form = document.getElementById('recipient-form');
+    const item = {
+      id: Date.now().toString(36),
+      name: form.querySelector('[name="rc-name"]').value.trim(),
+      category: form.querySelector('[name="rc-category"]').value,
+      url: form.querySelector('[name="rc-url"]').value.trim(),
+      method: form.querySelector('[name="rc-method"]').value,
+      notes: form.querySelector('[name="rc-notes"]').value.trim(),
+    };
+    if (!item.name) return;
+    if (!yd().recipients) yd().recipients = [];
+    yd().recipients.push(item);
+    markDirty(); renderPayments();
+    form.querySelectorAll('input').forEach(i => i.value = '');
+  }
+
+  function populateRecipientDropdowns() {
+    const recipients = yd().recipients || [];
+    const options = ['<option value="">— Type custom below —</option>']
+      .concat(recipients.map(r => `<option value="${r.name}">${r.name}</option>`))
+      .join('');
+    const sel = document.getElementById('pay-recipient-select');
+    if (sel) sel.innerHTML = options;
+
+    if (sel) {
+      sel.onchange = () => {
+        const chosen = recipients.find(r => r.name === sel.value);
+        if (chosen) {
+          const methodSel = document.getElementById('pay-method-select');
+          if (methodSel && chosen.method) methodSel.value = chosen.method;
+        }
+      };
+    }
+  }
+
+  // ── Distribution Planner ──────────────────────────────────────
+
+  function generatePlan() {
+    const zk = yd();
+    const result = ZakatEngine.calcFullZakat(zk);
+    if (!result || !result.exceedsNisab) {
+      document.getElementById('plan-grid').innerHTML = '<div class="empty-state"><p>Calculate your zakat first (must exceed nisab).</p></div>';
+      return;
+    }
+
+    const period = document.getElementById('plan-period').value;
+    const startDate = document.getElementById('plan-start-date').value;
+    const strategy = document.getElementById('plan-strategy').value;
+
+    if (!startDate) {
+      document.getElementById('plan-grid').innerHTML = '<div class="empty-state"><p>Please set a start date for the period.</p></div>';
+      return;
+    }
+
+    const recipients = zk.recipients || [];
+    if (recipients.length === 0) {
+      document.getElementById('plan-grid').innerHTML = '<div class="empty-state"><p>Add at least one recipient above first.</p></div>';
+      return;
+    }
+
+    const allocEl = document.getElementById('plan-allocations');
+    const existingPlan = zk.distributionPlan || {};
+    const recipientAllocations = existingPlan.allocations || {};
+
+    let totalRemaining = result.zakatRemaining > 0 ? result.zakatRemaining : result.zakatOwing;
+
+    allocEl.innerHTML = `
+      <h3 style="margin:0 0 0.5rem">Allocate Zakat to Recipients</h3>
+      <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.5rem">
+        Total to distribute: <strong>${currency(totalRemaining)}</strong>. Enter $ amount or % for each recipient.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem">
+        ${recipients.map(r => {
+          const saved = recipientAllocations[r.id] || {};
+          return `
+          <div class="plan-alloc-row" style="display:flex;align-items:center;gap:0.75rem;padding:0.4rem 0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+            <span style="flex:1;font-size:0.85rem;font-weight:500">${r.name} <span style="color:var(--text-secondary);font-size:0.75rem">(${CAT_LABELS[r.category] || r.category})</span></span>
+            <div style="display:flex;gap:0.4rem;align-items:center">
+              <label style="font-size:0.7rem;color:var(--text-secondary)">$</label>
+              <input type="number" class="alloc-amount" data-rid="${r.id}" step="0.01" style="width:100px;padding:0.3rem;font-size:0.82rem" value="${saved.amount || ''}">
+              <label style="font-size:0.7rem;color:var(--text-secondary)">or %</label>
+              <input type="number" class="alloc-pct" data-rid="${r.id}" step="1" min="0" max="100" style="width:70px;padding:0.3rem;font-size:0.82rem" value="${saved.percent || ''}">
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:0.5rem;text-align:right">
+        <button class="btn btn-primary btn-sm" id="btn-save-allocations">Save Allocations & Generate</button>
+      </div>
+    `;
+
+    document.getElementById('btn-save-allocations').addEventListener('click', () => {
+      saveAllocationsAndGenerate(totalRemaining, period, startDate, strategy);
+    });
+  }
+
+  function saveAllocationsAndGenerate(totalToDistribute, period, startDate, strategy) {
+    const zk = yd();
+    const recipients = zk.recipients || [];
+    const allocations = {};
+    let assignedTotal = 0;
+
+    recipients.forEach(r => {
+      const amtInput = document.querySelector(`.alloc-amount[data-rid="${r.id}"]`);
+      const pctInput = document.querySelector(`.alloc-pct[data-rid="${r.id}"]`);
+      const amt = parseFloat(amtInput?.value) || 0;
+      const pct = parseFloat(pctInput?.value) || 0;
+
+      let resolved = amt;
+      if (!amt && pct) resolved = round2(totalToDistribute * pct / 100);
+
+      allocations[r.id] = { amount: resolved, percent: pct, name: r.name };
+      assignedTotal += resolved;
+    });
+
+    const numDays = 10;
+    const start = new Date(startDate + 'T00:00:00');
+    const dates = [];
+    for (let d = 0; d < numDays; d++) {
+      const dt = new Date(start);
+      dt.setDate(dt.getDate() + d);
+      dates.push(dt);
+    }
+
+    const nightWeights = getNightWeights(strategy, numDays, period);
+
+    const grid = dates.map((dt, idx) => {
+      const dateStr = dt.toISOString().slice(0, 10);
+      const nightNum = period === 'ramadan-last-10' ? (21 + idx) : (idx + 1);
+      const label = period === 'ramadan-last-10'
+        ? `Night ${nightNum}${nightNum % 2 === 1 ? ' ★' : ''}`
+        : `Day ${nightNum}`;
+      const weight = nightWeights[idx];
+      const nightRecipients = {};
+
+      recipients.forEach(r => {
+        const alloc = allocations[r.id]?.amount || 0;
+        nightRecipients[r.id] = round2(alloc * weight);
+      });
+
+      return { date: dateStr, label, nightNum, weight, recipients: nightRecipients };
+    });
+
+    zk.distributionPlan = {
+      period, startDate, strategy,
+      allocations,
+      grid,
+      generatedAt: new Date().toISOString(),
+    };
+
+    markDirty();
+    renderPlanGrid(zk, totalToDistribute);
+  }
+
+  function getNightWeights(strategy, numDays, period) {
+    const weights = new Array(numDays).fill(0);
+    if (strategy === 'equal-all') {
+      const w = round2(1 / numDays);
+      weights.fill(w);
+    } else if (strategy === 'odd-nights' && period === 'ramadan-last-10') {
+      const oddIndices = [0, 2, 4, 6, 8]; // nights 21,23,25,27,29
+      const w = round2(1 / oddIndices.length);
+      oddIndices.forEach(i => weights[i] = w);
+    } else if (strategy === 'odd-nights') {
+      const oddIndices = [0, 2, 4, 6, 8];
+      const w = round2(1 / oddIndices.length);
+      oddIndices.forEach(i => weights[i] = w);
+    } else {
+      weights.fill(round2(1 / numDays));
+    }
+    return weights;
+  }
+
+  function renderPlanGrid(zk, totalToDistribute) {
+    const plan = zk.distributionPlan;
+    const el = document.getElementById('plan-grid');
+    if (!el || !plan || !plan.grid) { if (el) el.innerHTML = ''; return; }
+
+    const recipients = zk.recipients || [];
+    const payments = zk.zakatPayments || [];
+
+    let html = `<div class="plan-table-wrap" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:0.5rem">Night / Day</th>
+            <th style="text-align:left;padding:0.5rem">Date</th>
+            ${recipients.map(r => `<th style="text-align:right;padding:0.5rem">${r.name}</th>`).join('')}
+            <th style="text-align:right;padding:0.5rem;font-weight:700">Total</th>
+            <th style="text-align:center;padding:0.5rem">Status</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    let grandTotal = 0;
+    plan.grid.forEach(row => {
+      let rowTotal = 0;
+      const dayPayments = payments.filter(p => p.date === row.date);
+      const dayPaid = dayPayments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+
+      const recipCells = recipients.map(r => {
+        const amt = row.recipients[r.id] || 0;
+        rowTotal += amt;
+        return `<td style="text-align:right;padding:0.4rem;font-family:var(--mono)">${amt > 0 ? currency(amt) : '—'}</td>`;
+      }).join('');
+
+      grandTotal += rowTotal;
+      const isOdd = row.label.includes('★');
+      const paid = dayPaid >= rowTotal && rowTotal > 0;
+      const partial = dayPaid > 0 && dayPaid < rowTotal;
+
+      html += `
+        <tr style="${isOdd ? 'background:var(--primary-light)' : ''}">
+          <td style="padding:0.4rem;font-weight:${isOdd ? '600' : '400'}">${row.label}</td>
+          <td style="padding:0.4rem;color:var(--text-secondary)">${row.date}</td>
+          ${recipCells}
+          <td style="text-align:right;padding:0.4rem;font-weight:600;font-family:var(--mono)">${rowTotal > 0 ? currency(rowTotal) : '—'}</td>
+          <td style="text-align:center;padding:0.4rem">
+            ${rowTotal === 0 ? '<span style="color:var(--text-secondary)">—</span>' : paid ? '<span style="color:var(--success);font-weight:600">Paid</span>' : partial ? '<span style="color:var(--warning);font-weight:600">Partial</span>' : '<span style="color:var(--text-secondary)">Pending</span>'}
+          </td>
+        </tr>`;
+    });
+
+    html += `
+        </tbody>
+        <tfoot>
+          <tr style="border-top:2px solid var(--border)">
+            <td style="padding:0.6rem;font-weight:700" colspan="2">Total Plan</td>
+            ${recipients.map(r => {
+              const total = plan.grid.reduce((s, row) => s + (row.recipients[r.id] || 0), 0);
+              return `<td style="text-align:right;padding:0.6rem;font-weight:600;font-family:var(--mono)">${currency(total)}</td>`;
+            }).join('')}
+            <td style="text-align:right;padding:0.6rem;font-weight:700;font-family:var(--mono)">${currency(grandTotal)}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+
+    const unallocated = totalToDistribute - grandTotal;
+    if (unallocated > 1) {
+      html += `<p style="margin-top:0.5rem;font-size:0.82rem;color:var(--warning);font-weight:500">Unallocated: ${currency(unallocated)} — adjust recipient amounts above.</p>`;
+    }
+
+    el.innerHTML = html;
   }
 
   function removeItem(collection, id) {
@@ -559,10 +837,36 @@ const App = (() => {
   function renderPayments() {
     const zk = yd();
 
-    renderList('payments-list', zk.zakatPayments, 'zakatPayments',
-      i => `${i.date} — ${i.recipient}: ${currency(i.amount)}`);
+    // Recipients list
+    renderList('recipients-list', zk.recipients || [], 'recipients', i => {
+      const urlLink = i.url ? ` — <a href="${i.url}" target="_blank" rel="noopener" style="color:var(--primary)">${i.url}</a>` : '';
+      return `<strong>${i.name}</strong> <span style="color:var(--text-secondary);font-size:0.75rem">(${CAT_LABELS[i.category] || i.category})</span>${urlLink}<br><span style="font-size:0.78rem;color:var(--text-secondary)">Method: ${METHOD_LABELS[i.method] || i.method}${i.notes ? ' — ' + i.notes : ''}</span>`;
+    });
 
+    populateRecipientDropdowns();
+
+    // Restore plan grid if exists
     const result = ZakatEngine.calcFullZakat(zk);
+    if (zk.distributionPlan?.grid && result) {
+      const totalRemaining = result.zakatRemaining > 0 ? result.zakatRemaining : result.zakatOwing;
+      renderPlanGrid(zk, totalRemaining);
+
+      const planEl = document.getElementById('plan-period');
+      const startEl = document.getElementById('plan-start-date');
+      const stratEl = document.getElementById('plan-strategy');
+      if (planEl) planEl.value = zk.distributionPlan.period || 'ramadan-last-10';
+      if (startEl) startEl.value = zk.distributionPlan.startDate || '';
+      if (stratEl) stratEl.value = zk.distributionPlan.strategy || 'equal-all';
+    }
+
+    // Payments list (enhanced with method)
+    renderList('payments-list', zk.zakatPayments, 'zakatPayments',
+      i => {
+        const methodLabel = i.method ? ` via ${METHOD_LABELS[i.method] || i.method}` : '';
+        return `${i.date} — <strong>${i.recipient}</strong>: ${currency(i.amount)}${methodLabel}`;
+      });
+
+    // Payment summary
     const summaryEl = document.getElementById('payment-summary');
     if (summaryEl && result) {
       const statusClass = result.zakatRemaining > 0 ? 'owing' : 'refund';
@@ -575,6 +879,56 @@ const App = (() => {
         </div>
       `;
     }
+
+    // Per-recipient breakdown
+    renderRecipientBreakdown(zk, result);
+  }
+
+  function renderRecipientBreakdown(zk, result) {
+    const el = document.getElementById('recipient-breakdown');
+    if (!el) return;
+
+    const payments = zk.zakatPayments || [];
+    const recipients = zk.recipients || [];
+    if (payments.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No payments recorded yet.</p></div>';
+      return;
+    }
+
+    const byRecipient = {};
+    payments.forEach(p => {
+      if (!byRecipient[p.recipient]) byRecipient[p.recipient] = { total: 0, count: 0 };
+      byRecipient[p.recipient].total += parseFloat(p.amount) || 0;
+      byRecipient[p.recipient].count++;
+    });
+
+    const planned = zk.distributionPlan?.allocations || {};
+    const recipientMap = {};
+    recipients.forEach(r => { recipientMap[r.name] = r; });
+
+    let html = `<div style="display:flex;flex-direction:column;gap:0.4rem">`;
+    for (const [name, info] of Object.entries(byRecipient).sort((a, b) => b[1].total - a[1].total)) {
+      const r = recipientMap[name];
+      const plannedAmt = r && planned[r.id] ? planned[r.id].amount : 0;
+      const pctOfTotal = result?.zakatOwing > 0 ? round2(info.total / result.zakatOwing * 100) : 0;
+      const barWidth = Math.min(pctOfTotal, 100);
+
+      html += `
+        <div style="padding:0.5rem 0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+            <span style="font-weight:600;font-size:0.85rem">${name}</span>
+            <span style="font-family:var(--mono);font-weight:600">${currency(info.total)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem">
+            <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${barWidth}%;background:var(--primary);border-radius:3px"></div>
+            </div>
+            <span style="font-size:0.72rem;color:var(--text-secondary);white-space:nowrap">${info.count} payment${info.count > 1 ? 's' : ''} · ${pctOfTotal}%${plannedAmt > 0 ? ` · Planned: ${currency(plannedAmt)}` : ''}</span>
+          </div>
+        </div>`;
+    }
+    html += `</div>`;
+    el.innerHTML = html;
   }
 
   // ── Settings Population ────────────────────────────────────────
@@ -647,6 +1001,8 @@ const App = (() => {
     document.getElementById('btn-add-metal').addEventListener('click', addMetal);
     document.getElementById('btn-add-recv').addEventListener('click', addReceivable);
     document.getElementById('btn-add-liab').addEventListener('click', addLiability);
+    document.getElementById('btn-add-recipient').addEventListener('click', addRecipient);
+    document.getElementById('btn-generate-plan').addEventListener('click', generatePlan);
     document.getElementById('btn-add-payment').addEventListener('click', addPayment);
 
     // Persistence buttons

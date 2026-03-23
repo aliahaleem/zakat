@@ -9,12 +9,12 @@
     "personalBaseIncomeNote": "Management fee (T4A) — pre-tax personal income used as baseline",
 
     "bankAccounts": [
-      { "id": "bank-simplii", "name": "Simplii Chequing", "currency": "CAD", "minBalance": 5000, "notes": "Minimum held balance during hawl year" },
-      { "id": "bank-td-joint", "name": "TD Joint Chequing", "currency": "CAD", "minBalance": 3000, "notes": "Minimum held balance during hawl year" },
-      { "id": "bank-paypal", "name": "PayPal", "currency": "CAD", "minBalance": 200, "notes": "Minimum held balance" },
-      { "id": "bank-cash", "name": "Cash on Hand", "currency": "CAD", "minBalance": 500, "notes": "Estimated cash held" },
-      { "id": "bank-td-corp", "name": "TD Corp Chequing", "currency": "CAD", "minBalance": 15000, "notes": "Corp account — zakatable portion after estimated tax" },
-      { "id": "bank-nano-corp", "name": "Nano Corp Chequing", "currency": "CAD", "minBalance": 5000, "notes": "Nano Corp account — zakatable portion after estimated tax" }
+      { "id": "bank-simplii", "name": "Simplii Chequing", "currency": "CAD", "minBalance": 5200, "notes": "Minimum held balance during hawl year. Check monthly statements for lowest point." },
+      { "id": "bank-td-joint", "name": "TD Joint Chequing", "currency": "CAD", "minBalance": 3100, "notes": "Joint account — include your portion (or full amount if all zakatable to you)." },
+      { "id": "bank-paypal", "name": "PayPal", "currency": "USD", "minBalance": 150, "notes": "USD balance — converted to CAD at the rate above." },
+      { "id": "bank-cash", "name": "Cash on Hand", "currency": "CAD", "minBalance": 500, "notes": "Estimated physical cash held at home." },
+      { "id": "bank-td-corp", "name": "TD Corp Chequing", "currency": "CAD", "minBalance": 18000, "notes": "Corporate bank account. Your zakatable portion = balance after setting aside estimated corp tax." },
+      { "id": "bank-nano-corp", "name": "Nano Corp Chequing", "currency": "CAD", "minBalance": 5000, "notes": "Second corporate account. Enter 0 if inactive." }
     ],
 
     "corpIncomeAdjustments": [
@@ -22,37 +22,35 @@
         "id": "corp-main",
         "name": "Main Corp (Ontario CCPC)",
         "grossIncome": 181120.45,
-        "estimatedCorpTax": 36152,
         "estimatedExpenses": 77374,
-        "netAfterTax": 67594,
+        "estimatedCorpTax": 36152,
+        "netAfterTax": 67594.45,
         "yourSharePercent": 100,
-        "yourZakatableAmount": 67594,
-        "notes": "Revenue $181,120 - expenses $77,374 - corp tax $36,152 = $67,594 net. This is what would flow to you after corp tax. Adjust share % if split among shareholders."
+        "yourZakatableAmount": 67594.45,
+        "notes": "Revenue $181,120 - expenses $77,374 - corp tax $36,152 = ~$67,594 net. This is the after-tax amount that would flow to you. Use 'Import from Tax App' to auto-populate from Corp Tax Manager."
       },
       {
         "id": "corp-nano",
         "name": "Nano Corp",
-        "grossIncome": 0,
-        "estimatedCorpTax": 0,
-        "estimatedExpenses": 0,
-        "netAfterTax": 0,
+        "grossIncome": 12000,
+        "estimatedExpenses": 2000,
+        "estimatedCorpTax": 1220,
+        "netAfterTax": 8780,
         "yourSharePercent": 100,
-        "yourZakatableAmount": 0,
-        "notes": "Enter Nano Corp income if applicable. Currently no active income."
+        "yourZakatableAmount": 8780,
+        "notes": "Second corporation. Enter gross income, expenses, and estimated tax. App calculates net × your share %."
       }
     ],
 
     "investments": [
       {
-        "id": "inv-corp-td-webbroker",
-        "account": "Corp TD WebBroker",
+        "id": "inv-corp-td-cad",
+        "account": "Corp TD WebBroker (CAD)",
         "accountType": "corporate",
         "currency": "CAD",
         "marketValue": 150000,
         "debtRatioPercent": 0,
-        "zakatablePercent": 100,
-        "zakatableValue": 150000,
-        "notes": "Corp investment account. If holding individual stocks, enter debt ratio per company to calculate zakatable portion. For index funds/ETFs with mixed companies, use ~30% debt ratio as estimate."
+        "notes": "Corporate investment account — CAD holdings. Debt ratio 0% for cash/GICs. For stocks or ETFs, enter the company/fund debt ratio to purify."
       },
       {
         "id": "inv-corp-td-usd",
@@ -60,12 +58,8 @@
         "accountType": "corporate",
         "currency": "USD",
         "marketValue": 50000,
-        "fxRate": 1.40,
-        "marketValueCAD": 70000,
         "debtRatioPercent": 0,
-        "zakatablePercent": 100,
-        "zakatableValue": 70000,
-        "notes": "USD holdings in corp account. Market value × FX rate = CAD equivalent. Debt ratio 0% if cash/GICs, or enter company debt ratio for stocks."
+        "notes": "Corporate investment — USD holdings. Converted to CAD using the rate in settings (e.g. $50,000 USD × 1.40 = $70,000 CAD)."
       },
       {
         "id": "inv-rrsp",
@@ -74,52 +68,204 @@
         "currency": "CAD",
         "marketValue": 25000,
         "debtRatioPercent": 0,
-        "zakatablePercent": 100,
-        "zakatableValue": 25000,
-        "notes": "Scholars differ on RRSP: (1) pay zakat on full value yearly, (2) pay only on withdrawal, (3) pay on estimated after-tax value. Conservative approach = pay yearly on full value."
+        "notes": "Scholars differ on RRSP: (1) pay on full value yearly (conservative), (2) pay only on withdrawal, (3) pay on estimated after-tax value. This uses option 1."
       },
       {
         "id": "inv-tfsa",
         "account": "Personal TFSA",
         "accountType": "tfsa",
         "currency": "CAD",
-        "marketValue": 0,
+        "marketValue": 8500,
         "debtRatioPercent": 0,
-        "zakatablePercent": 100,
-        "zakatableValue": 0,
-        "notes": "TFSA — most scholars say zakatable since you have full access."
+        "notes": "TFSA — most scholars say zakatable since you have full access. No tax on withdrawal."
       },
       {
         "id": "inv-wealthsimple",
         "account": "Wealthsimple (Personal)",
         "accountType": "non-registered",
         "currency": "CAD",
-        "marketValue": 1000,
+        "marketValue": 4200,
         "debtRatioPercent": 25,
-        "zakatablePercent": 75,
-        "zakatableValue": 750,
-        "notes": "Non-registered investment. Debt ratio 25% means 75% of market value is zakatable. Check fund holdings for actual debt ratio."
+        "notes": "Non-registered investment. Debt ratio 25% means 75% of market value is zakatable. Check fund's annual report for actual debt-to-asset ratio."
+      },
+      {
+        "id": "inv-corp-etf",
+        "account": "Corp S&P 500 ETF (USD)",
+        "accountType": "corporate",
+        "currency": "USD",
+        "marketValue": 30000,
+        "debtRatioPercent": 30,
+        "notes": "Index fund — broad market ETFs typically have ~25-35% debt ratio across holdings. Only 70% of value is zakatable."
       }
     ],
 
     "preciousMetals": [
-      { "id": "gold-jewelry", "type": "gold", "description": "Gold jewelry (combined household)", "weightGrams": 50, "purity": 0.75, "pureWeightGrams": 37.5, "notes": "18K gold = 75% purity. Enter total weight, app calculates pure gold." },
-      { "id": "gold-coins", "type": "gold", "description": "Gold coins/bars", "weightGrams": 0, "purity": 1.0, "pureWeightGrams": 0, "notes": "24K = 100% purity" },
-      { "id": "silver-items", "type": "silver", "description": "Silver items", "weightGrams": 100, "purity": 0.925, "pureWeightGrams": 92.5, "notes": "Sterling silver = 92.5% purity" }
+      {
+        "id": "gold-jewelry",
+        "type": "gold",
+        "description": "Gold jewelry (combined household)",
+        "weightGrams": 50,
+        "purity": 0.75,
+        "notes": "18K gold = 75% purity. Weigh all gold items and enter total. App calculates: 50g × 0.75 = 37.5g pure × $120/g = $4,500."
+      },
+      {
+        "id": "gold-coins",
+        "type": "gold",
+        "description": "Gold coins / bars",
+        "weightGrams": 10,
+        "purity": 1.0,
+        "notes": "24K = 100% purity. Investment-grade gold bullion. App calculates: 10g × 1.0 = 10g pure × $120/g = $1,200."
+      },
+      {
+        "id": "silver-items",
+        "type": "silver",
+        "description": "Silver items (jewelry + utensils)",
+        "weightGrams": 200,
+        "purity": 0.925,
+        "notes": "Sterling silver = 92.5% purity. App calculates: 200g × 0.925 = 185g pure × $1.40/g = $259."
+      }
     ],
 
     "receivables": [
-      { "id": "recv-1", "description": "Money owed to you (loans given, expected payments)", "amount": 0, "currency": "CAD", "likelihood": "certain", "notes": "Only include amounts you reasonably expect to collect" }
+      {
+        "id": "recv-loan-friend",
+        "description": "Loan to friend (Khalid)",
+        "amount": 2000,
+        "currency": "CAD",
+        "likelihood": "certain",
+        "notes": "Lent $2,000 — expects full repayment. 'Certain' means included in zakatable total."
+      },
+      {
+        "id": "recv-invoice-client",
+        "description": "Outstanding client invoice",
+        "amount": 5000,
+        "currency": "CAD",
+        "likelihood": "likely",
+        "notes": "Billed but not yet received. 'Likely' = still included. Change to 'Doubtful' if collection is uncertain."
+      },
+      {
+        "id": "recv-old-debt",
+        "description": "Old debt from acquaintance",
+        "amount": 1500,
+        "currency": "CAD",
+        "likelihood": "doubtful",
+        "notes": "Unlikely to be collected — 'Doubtful' means excluded from zakatable total."
+      }
     ],
 
     "liabilities": [
-      { "id": "liab-cc-balance", "description": "Credit card balances due", "amount": 0, "notes": "Outstanding CC balance at hawl date" },
-      { "id": "liab-bills", "description": "Unpaid bills / short-term debts", "amount": 0, "notes": "Bills due within the year" },
-      { "id": "liab-mortgage", "description": "Mortgage (next 12 months payments only)", "amount": 0, "notes": "Only deduct upcoming 12 months of payments, not total mortgage balance. Some scholars say no mortgage deduction." }
+      {
+        "id": "liab-cc-balance",
+        "description": "Credit card balances due",
+        "amount": 2800,
+        "notes": "Combined outstanding CC balance at hawl date. This is deducted from zakatable wealth."
+      },
+      {
+        "id": "liab-bills",
+        "description": "Unpaid bills / short-term debts",
+        "amount": 500,
+        "notes": "Utility bills, phone bills, etc. due within the month."
+      },
+      {
+        "id": "liab-mortgage",
+        "description": "Mortgage (next 12 months payments only)",
+        "amount": 24000,
+        "notes": "Only deduct upcoming 12 months of payments ($2,000/mo × 12), NOT total mortgage balance. Some scholars say no mortgage deduction at all."
+      },
+      {
+        "id": "liab-car-loan",
+        "description": "Car loan (next 12 months payments)",
+        "amount": 6000,
+        "notes": "Next 12 months of car payments ($500/mo × 12). Same principle as mortgage — only short-term portion."
+      }
     ],
 
+    "recipients": [
+      {
+        "id": "rc-islamic-relief",
+        "name": "Islamic Relief Canada",
+        "category": "international-charity",
+        "url": "https://www.islamicreliefcanada.org/zakat/",
+        "method": "credit-card",
+        "notes": "Accepts Visa/MC/Amex online. Tax receipt issued immediately. CRA charity #: 821896875RR0001"
+      },
+      {
+        "id": "rc-human-concern",
+        "name": "Human Concern International",
+        "category": "international-charity",
+        "url": "https://www.humanconcern.org/zakat/",
+        "method": "credit-card",
+        "notes": "Ottawa-based. Accepts online donations. Tax receipt issued."
+      },
+      {
+        "id": "rc-nzf",
+        "name": "National Zakat Foundation Canada",
+        "category": "local-charity",
+        "url": "https://www.nzfcanada.com/",
+        "method": "credit-card",
+        "notes": "Distributes zakat locally within Canada to eligible recipients. Tax receipt issued."
+      },
+      {
+        "id": "rc-local-masjid",
+        "name": "Local Masjid Zakat Fund",
+        "category": "local-masjid",
+        "url": "",
+        "method": "e-transfer",
+        "notes": "E-transfer to zakat@masjid.com — confirm with treasurer that funds go to zakat-eligible recipients only"
+      },
+      {
+        "id": "rc-launchgood",
+        "name": "LaunchGood Campaigns",
+        "category": "online-platform",
+        "url": "https://www.launchgood.com/discover#!explore/zakat",
+        "method": "launchgood",
+        "notes": "Crowdfunding platform — filter by 'Zakat-eligible' campaigns. Verify each campaign's zakat eligibility."
+      },
+      {
+        "id": "rc-family-member",
+        "name": "Family Member (Eligible)",
+        "category": "individual",
+        "url": "",
+        "method": "e-transfer",
+        "notes": "Must qualify as one of the 8 categories (poor, needy, in debt, etc.). Cannot give to parents, children, or spouse."
+      },
+      {
+        "id": "rc-penny-appeal",
+        "name": "Penny Appeal Canada",
+        "category": "international-charity",
+        "url": "https://pennyappeal.ca/zakat",
+        "method": "credit-card",
+        "notes": "Accepts online. Focuses on orphan care, water, food security. Tax receipt issued."
+      }
+    ],
+
+    "distributionPlan": null,
+
     "zakatPayments": [
-      { "id": "zp-sample", "date": "2025-03-15", "recipient": "Sample — replace with actual", "amount": 0, "notes": "" }
+      {
+        "id": "zp-islamic-relief",
+        "date": "2025-01-15",
+        "recipient": "Islamic Relief Canada",
+        "amount": 1000,
+        "method": "credit-card",
+        "notes": "Quarterly zakat payment."
+      },
+      {
+        "id": "zp-local-masjid",
+        "date": "2025-03-01",
+        "recipient": "Local Masjid Zakat Fund",
+        "amount": 500,
+        "method": "e-transfer",
+        "notes": "E-transfer during Ramadan."
+      },
+      {
+        "id": "zp-family",
+        "date": "2025-03-10",
+        "recipient": "Family Member (Eligible)",
+        "amount": 750,
+        "method": "e-transfer",
+        "notes": "Zakat to eligible family member in need."
+      }
     ]
   }
 }

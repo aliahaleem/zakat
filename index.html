@@ -334,10 +334,105 @@
     <select class="year-select-mirror"></select>
   </div>
 
+  <!-- ── Recipients / Organizations ──────────────────────────── -->
+  <div class="card">
+    <h2>Recipients / Organizations</h2>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
+      Save your preferred zakat recipients. These appear in the distribution planner and payment forms below.
+    </p>
+    <div id="recipient-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Organization / Person</label>
+        <input type="text" name="rc-name" placeholder="e.g. Islamic Relief Canada">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select name="rc-category">
+          <option value="international-charity">International Charity</option>
+          <option value="local-masjid">Local Masjid</option>
+          <option value="local-charity">Local Charity</option>
+          <option value="online-platform">Online Platform</option>
+          <option value="individual">Individual / Family</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Website / Payment Link</label>
+        <input type="url" name="rc-url" placeholder="https://islamicrelief.ca/zakat">
+      </div>
+      <div class="form-group">
+        <label>Payment Method</label>
+        <select name="rc-method">
+          <option value="credit-card">Credit Card (Online)</option>
+          <option value="e-transfer">E-Transfer</option>
+          <option value="paypal">PayPal</option>
+          <option value="bank-transfer">Bank Transfer</option>
+          <option value="cash">Cash</option>
+          <option value="cheque">Cheque</option>
+          <option value="launchgood">LaunchGood</option>
+          <option value="gofundme">GoFundMe</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <input type="text" name="rc-notes" placeholder="e.g. E-transfer to zakat@masjid.com">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-add-recipient">Add Recipient</button>
+      </div>
+    </div>
+    <div id="recipients-list"></div>
+  </div>
+
+  <!-- ── Distribution Planner ────────────────────────────────── -->
+  <div class="card">
+    <h2>Distribution Planner</h2>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
+      Plan how to split your zakat across recipients during blessed periods.
+      Set allocations, then generate a nightly/daily plan.
+    </p>
+
+    <div class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Period</label>
+        <select id="plan-period">
+          <option value="ramadan-last-10">Last 10 Nights of Ramadan</option>
+          <option value="dhul-hijjah-10">First 10 Days of Dhul Hijjah</option>
+          <option value="custom">Custom Period</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Start Date (Night 21 / Day 1)</label>
+        <input type="date" id="plan-start-date">
+      </div>
+      <div class="form-group">
+        <label>Distribution Strategy</label>
+        <select id="plan-strategy">
+          <option value="equal-all">Equal — All 10 Nights/Days</option>
+          <option value="odd-nights">Weighted — Odd Nights Only (Laylatul Qadr focus)</option>
+          <option value="custom-split">Custom — Set Per Night/Day</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-generate-plan">Generate Plan</button>
+      </div>
+    </div>
+
+    <!-- Per-recipient allocation -->
+    <div id="plan-allocations" style="margin-bottom:1rem"></div>
+
+    <!-- Generated plan grid -->
+    <div id="plan-grid"></div>
+  </div>
+
+  <!-- ── Actual Payments Made ────────────────────────────────── -->
   <div class="card">
     <h2>Zakat Payments Made</h2>
     <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
-      Track your zakat payments throughout the year to see your remaining balance.
+      Record actual payments. Select a saved recipient or type a custom one.
     </p>
     <div id="zakat-payment-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
       <div class="form-group">
@@ -346,11 +441,32 @@
       </div>
       <div class="form-group">
         <label>Recipient</label>
+        <select name="zk-pay-recipient-select" id="pay-recipient-select">
+          <option value="">— Type custom below —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Or Custom Recipient</label>
         <input type="text" name="zk-pay-recipient" placeholder="e.g. Islamic Relief">
       </div>
       <div class="form-group">
         <label>Amount ($)</label>
         <input type="number" name="zk-pay-amount" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Method</label>
+        <select name="zk-pay-method" id="pay-method-select">
+          <option value="">—</option>
+          <option value="credit-card">Credit Card</option>
+          <option value="e-transfer">E-Transfer</option>
+          <option value="paypal">PayPal</option>
+          <option value="bank-transfer">Bank Transfer</option>
+          <option value="cash">Cash</option>
+          <option value="cheque">Cheque</option>
+          <option value="launchgood">LaunchGood</option>
+          <option value="gofundme">GoFundMe</option>
+          <option value="other">Other</option>
+        </select>
       </div>
       <div class="form-group">
         <label>&nbsp;</label>
@@ -364,6 +480,12 @@
   <div class="card">
     <h2>Payment Summary</h2>
     <div id="payment-summary"></div>
+  </div>
+
+  <!-- Per-Recipient Breakdown -->
+  <div class="card">
+    <h2>Per-Recipient Breakdown</h2>
+    <div id="recipient-breakdown"></div>
   </div>
 
 </section>
