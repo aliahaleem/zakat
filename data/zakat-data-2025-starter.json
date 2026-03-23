@@ -1,0 +1,125 @@
+{
+  "2025": {
+    "hawlDate": "2025-03-15",
+    "nisabMethod": "silver",
+    "goldPricePerGram": 120.00,
+    "silverPricePerGram": 1.40,
+    "usdToCAD": 1.40,
+    "personalBaseIncome": 28000,
+    "personalBaseIncomeNote": "Management fee (T4A) — pre-tax personal income used as baseline",
+
+    "bankAccounts": [
+      { "id": "bank-simplii", "name": "Simplii Chequing", "currency": "CAD", "minBalance": 5000, "notes": "Minimum held balance during hawl year" },
+      { "id": "bank-td-joint", "name": "TD Joint Chequing", "currency": "CAD", "minBalance": 3000, "notes": "Minimum held balance during hawl year" },
+      { "id": "bank-paypal", "name": "PayPal", "currency": "CAD", "minBalance": 200, "notes": "Minimum held balance" },
+      { "id": "bank-cash", "name": "Cash on Hand", "currency": "CAD", "minBalance": 500, "notes": "Estimated cash held" },
+      { "id": "bank-td-corp", "name": "TD Corp Chequing", "currency": "CAD", "minBalance": 15000, "notes": "Corp account — zakatable portion after estimated tax" },
+      { "id": "bank-nano-corp", "name": "Nano Corp Chequing", "currency": "CAD", "minBalance": 5000, "notes": "Nano Corp account — zakatable portion after estimated tax" }
+    ],
+
+    "corpIncomeAdjustments": [
+      {
+        "id": "corp-main",
+        "name": "Main Corp (Ontario CCPC)",
+        "grossIncome": 181120.45,
+        "estimatedCorpTax": 36152,
+        "estimatedExpenses": 77374,
+        "netAfterTax": 67594,
+        "yourSharePercent": 100,
+        "yourZakatableAmount": 67594,
+        "notes": "Revenue $181,120 - expenses $77,374 - corp tax $36,152 = $67,594 net. This is what would flow to you after corp tax. Adjust share % if split among shareholders."
+      },
+      {
+        "id": "corp-nano",
+        "name": "Nano Corp",
+        "grossIncome": 0,
+        "estimatedCorpTax": 0,
+        "estimatedExpenses": 0,
+        "netAfterTax": 0,
+        "yourSharePercent": 100,
+        "yourZakatableAmount": 0,
+        "notes": "Enter Nano Corp income if applicable. Currently no active income."
+      }
+    ],
+
+    "investments": [
+      {
+        "id": "inv-corp-td-webbroker",
+        "account": "Corp TD WebBroker",
+        "accountType": "corporate",
+        "currency": "CAD",
+        "marketValue": 150000,
+        "debtRatioPercent": 0,
+        "zakatablePercent": 100,
+        "zakatableValue": 150000,
+        "notes": "Corp investment account. If holding individual stocks, enter debt ratio per company to calculate zakatable portion. For index funds/ETFs with mixed companies, use ~30% debt ratio as estimate."
+      },
+      {
+        "id": "inv-corp-td-usd",
+        "account": "Corp TD WebBroker (USD)",
+        "accountType": "corporate",
+        "currency": "USD",
+        "marketValue": 50000,
+        "fxRate": 1.40,
+        "marketValueCAD": 70000,
+        "debtRatioPercent": 0,
+        "zakatablePercent": 100,
+        "zakatableValue": 70000,
+        "notes": "USD holdings in corp account. Market value × FX rate = CAD equivalent. Debt ratio 0% if cash/GICs, or enter company debt ratio for stocks."
+      },
+      {
+        "id": "inv-rrsp",
+        "account": "Personal RRSP",
+        "accountType": "rrsp",
+        "currency": "CAD",
+        "marketValue": 25000,
+        "debtRatioPercent": 0,
+        "zakatablePercent": 100,
+        "zakatableValue": 25000,
+        "notes": "Scholars differ on RRSP: (1) pay zakat on full value yearly, (2) pay only on withdrawal, (3) pay on estimated after-tax value. Conservative approach = pay yearly on full value."
+      },
+      {
+        "id": "inv-tfsa",
+        "account": "Personal TFSA",
+        "accountType": "tfsa",
+        "currency": "CAD",
+        "marketValue": 0,
+        "debtRatioPercent": 0,
+        "zakatablePercent": 100,
+        "zakatableValue": 0,
+        "notes": "TFSA — most scholars say zakatable since you have full access."
+      },
+      {
+        "id": "inv-wealthsimple",
+        "account": "Wealthsimple (Personal)",
+        "accountType": "non-registered",
+        "currency": "CAD",
+        "marketValue": 1000,
+        "debtRatioPercent": 25,
+        "zakatablePercent": 75,
+        "zakatableValue": 750,
+        "notes": "Non-registered investment. Debt ratio 25% means 75% of market value is zakatable. Check fund holdings for actual debt ratio."
+      }
+    ],
+
+    "preciousMetals": [
+      { "id": "gold-jewelry", "type": "gold", "description": "Gold jewelry (combined household)", "weightGrams": 50, "purity": 0.75, "pureWeightGrams": 37.5, "notes": "18K gold = 75% purity. Enter total weight, app calculates pure gold." },
+      { "id": "gold-coins", "type": "gold", "description": "Gold coins/bars", "weightGrams": 0, "purity": 1.0, "pureWeightGrams": 0, "notes": "24K = 100% purity" },
+      { "id": "silver-items", "type": "silver", "description": "Silver items", "weightGrams": 100, "purity": 0.925, "pureWeightGrams": 92.5, "notes": "Sterling silver = 92.5% purity" }
+    ],
+
+    "receivables": [
+      { "id": "recv-1", "description": "Money owed to you (loans given, expected payments)", "amount": 0, "currency": "CAD", "likelihood": "certain", "notes": "Only include amounts you reasonably expect to collect" }
+    ],
+
+    "liabilities": [
+      { "id": "liab-cc-balance", "description": "Credit card balances due", "amount": 0, "notes": "Outstanding CC balance at hawl date" },
+      { "id": "liab-bills", "description": "Unpaid bills / short-term debts", "amount": 0, "notes": "Bills due within the year" },
+      { "id": "liab-mortgage", "description": "Mortgage (next 12 months payments only)", "amount": 0, "notes": "Only deduct upcoming 12 months of payments, not total mortgage balance. Some scholars say no mortgage deduction." }
+    ],
+
+    "zakatPayments": [
+      { "id": "zp-sample", "date": "2025-03-15", "recipient": "Sample — replace with actual", "amount": 0, "notes": "" }
+    ]
+  }
+}

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zakat Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- HEADER                                                         -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="header-top">
+    <h1>
+      Zakat Calculator
+      <span class="subtitle">Islamic Wealth Tax</span>
+    </h1>
+    <div class="header-actions">
+      <span id="sync-status" class="sync-status">Not saved</span>
+      <button class="btn btn-sm btn-secondary" id="btn-save-local">Save Local</button>
+      <button class="btn btn-sm btn-primary" id="btn-sync-push">Push to GitHub</button>
+    </div>
+  </div>
+  <nav>
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="assets">Assets</button>
+    <button data-tab="deductions">Deductions</button>
+    <button data-tab="payments">Payments</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- DASHBOARD                                                      -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section id="tab-dashboard" class="active">
+
+  <div class="year-selector">
+    <label>Zakat Year:</label>
+    <select id="year-select"></select>
+  </div>
+
+  <div id="dashboard-stats" class="stats-grid"></div>
+
+  <!-- Nisab Info -->
+  <div class="card">
+    <h2>Nisab Threshold</h2>
+    <div id="nisab-display"></div>
+  </div>
+
+  <!-- Full Summary -->
+  <div class="card">
+    <h2>Zakat Calculation Summary</h2>
+    <div id="zakat-summary"></div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- ASSETS                                                         -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section id="tab-assets">
+
+  <div class="year-selector">
+    <label>Zakat Year:</label>
+    <select class="year-select-mirror"></select>
+  </div>
+
+  <!-- Zakat Settings (inline) -->
+  <div class="card">
+    <h2>Zakat Settings</h2>
+    <div id="zakat-settings-form" class="form-row" style="padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Hawl Date</label>
+        <input type="date" name="zk-hawl-date">
+      </div>
+      <div class="form-group">
+        <label>Nisab Method</label>
+        <select name="zk-nisab-method">
+          <option value="silver">Silver (595g — conservative)</option>
+          <option value="gold">Gold (85g)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Gold $/gram</label>
+        <input type="number" name="zk-gold-price" step="0.01" placeholder="120.00">
+      </div>
+      <div class="form-group">
+        <label>Silver $/gram</label>
+        <input type="number" name="zk-silver-price" step="0.01" placeholder="1.40">
+      </div>
+      <div class="form-group">
+        <label>USD→CAD Rate</label>
+        <input type="number" name="zk-usd-rate" step="0.0001" placeholder="1.40">
+      </div>
+      <div class="form-group">
+        <label>Personal Base Income ($)</label>
+        <input type="number" name="zk-base-income" step="0.01" placeholder="28000">
+      </div>
+    </div>
+  </div>
+
+  <!-- Bank Accounts -->
+  <div class="card">
+    <h2>Bank Accounts (Minimum Balances)</h2>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
+      Enter the minimum balance held in each account during the hawl year.
+    </p>
+    <div id="zakat-bank-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Account Name</label>
+        <input type="text" name="zk-bank-name" placeholder="e.g. TD Joint">
+      </div>
+      <div class="form-group">
+        <label>Currency</label>
+        <select name="zk-bank-currency">
+          <option value="CAD">CAD</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Min Balance ($)</label>
+        <input type="number" name="zk-bank-balance" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-add-bank">Add Account</button>
+      </div>
+    </div>
+    <div id="bank-list"></div>
+  </div>
+
+  <!-- Corp Income Adjustments -->
+  <div class="card">
+    <h2>Corporate Income (After-Tax Zakatable)</h2>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
+      Enter each corporation's income. The app estimates the after-tax amount zakatable to you.
+      You can also import this from the Corp Tax Manager app.
+    </p>
+    <div id="zakat-corp-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Corp Name</label>
+        <input type="text" name="zk-corp-name" placeholder="e.g. Main Corp">
+      </div>
+      <div class="form-group">
+        <label>Gross Income ($)</label>
+        <input type="number" name="zk-corp-gross" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Est. Expenses ($)</label>
+        <input type="number" name="zk-corp-expenses" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Est. Corp Tax ($)</label>
+        <input type="number" name="zk-corp-tax" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Your Share (%)</label>
+        <input type="number" name="zk-corp-share" step="1" value="100" placeholder="100">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-add-corp">Add Corp</button>
+      </div>
+    </div>
+    <div id="corp-list"></div>
+  </div>
+
+  <!-- Investment Accounts -->
+  <div class="card">
+    <h2>Investment Accounts (Market Value)</h2>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
+      Enter each investment account's market value at the hawl date. For stocks, enter the company/fund's debt ratio to purify the zakatable portion.
+    </p>
+    <div id="zakat-inv-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Account / Company</label>
+        <input type="text" name="zk-inv-account" placeholder="e.g. Corp TD WebBroker">
+      </div>
+      <div class="form-group">
+        <label>Account Type</label>
+        <select name="zk-inv-type">
+          <option value="corporate">Corporate</option>
+          <option value="non-registered">Non-Registered</option>
+          <option value="rrsp">RRSP</option>
+          <option value="tfsa">TFSA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Currency</label>
+        <select name="zk-inv-currency">
+          <option value="CAD">CAD</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Market Value</label>
+        <input type="number" name="zk-inv-value" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Debt Ratio (%)</label>
+        <input type="number" name="zk-inv-debt" step="1" value="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-add-inv">Add Investment</button>
+      </div>
+    </div>
+    <div id="inv-list"></div>
+  </div>
+
+  <!-- Precious Metals -->
+  <div class="card">
+    <h2>Precious Metals (Gold & Silver)</h2>
+    <div id="zakat-metals-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Type</label>
+        <select name="zk-metal-type">
+          <option value="gold">Gold</option>
+          <option value="silver">Silver</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" name="zk-metal-desc" placeholder="e.g. 18K jewelry">
+      </div>
+      <div class="form-group">
+        <label>Weight (grams)</label>
+        <input type="number" name="zk-metal-weight" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Purity (0-1)</label>
+        <input type="number" name="zk-metal-purity" step="0.01" value="1.00" placeholder="1.00">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-add-metal">Add Metal</button>
+      </div>
+    </div>
+    <div id="metals-list"></div>
+  </div>
+
+  <!-- Receivables -->
+  <div class="card">
+    <h2>Receivables (Money Owed to You)</h2>
+    <div id="zakat-recv-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" name="zk-recv-desc" placeholder="e.g. Loan to friend">
+      </div>
+      <div class="form-group">
+        <label>Amount ($)</label>
+        <input type="number" name="zk-recv-amount" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Currency</label>
+        <select name="zk-recv-currency">
+          <option value="CAD">CAD</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Likelihood</label>
+        <select name="zk-recv-likelihood">
+          <option value="certain">Certain</option>
+          <option value="likely">Likely</option>
+          <option value="doubtful">Doubtful (excluded)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-add-recv">Add</button>
+      </div>
+    </div>
+    <div id="recv-list"></div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- DEDUCTIONS                                                     -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section id="tab-deductions">
+
+  <div class="year-selector">
+    <label>Zakat Year:</label>
+    <select class="year-select-mirror"></select>
+  </div>
+
+  <div class="card">
+    <h2>Debts / Liabilities (Deducted from Zakatable Wealth)</h2>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
+      Enter outstanding debts at the hawl date. Short-term debts are generally deductible.
+      For mortgages, many scholars only allow deducting the next 12 months of payments.
+    </p>
+    <div id="zakat-liab-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" name="zk-liab-desc" placeholder="e.g. CC balance">
+      </div>
+      <div class="form-group">
+        <label>Amount ($)</label>
+        <input type="number" name="zk-liab-amount" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-add-liab">Add Liability</button>
+      </div>
+    </div>
+    <div id="liab-list"></div>
+  </div>
+
+  <!-- Summary preview -->
+  <div class="card">
+    <h2>Net Zakatable Preview</h2>
+    <div id="deductions-preview"></div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- PAYMENTS                                                       -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section id="tab-payments">
+
+  <div class="year-selector">
+    <label>Zakat Year:</label>
+    <select class="year-select-mirror"></select>
+  </div>
+
+  <div class="card">
+    <h2>Zakat Payments Made</h2>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
+      Track your zakat payments throughout the year to see your remaining balance.
+    </p>
+    <div id="zakat-payment-form" class="form-row" style="margin-bottom:1rem;padding:0.75rem;background:var(--surface-alt);border-radius:var(--radius)">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" name="zk-pay-date">
+      </div>
+      <div class="form-group">
+        <label>Recipient</label>
+        <input type="text" name="zk-pay-recipient" placeholder="e.g. Islamic Relief">
+      </div>
+      <div class="form-group">
+        <label>Amount ($)</label>
+        <input type="number" name="zk-pay-amount" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary btn-sm" id="btn-add-payment">Add Payment</button>
+      </div>
+    </div>
+    <div id="payments-list"></div>
+  </div>
+
+  <!-- Payment Summary -->
+  <div class="card">
+    <h2>Payment Summary</h2>
+    <div id="payment-summary"></div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- SETTINGS                                                       -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section id="tab-settings">
+
+  <div class="card">
+    <div class="settings-section">
+      <h3>Data Management</h3>
+      <div class="btn-group">
+        <button class="btn btn-secondary" id="btn-export">Export JSON</button>
+        <button class="btn btn-secondary" id="btn-import">Import JSON</button>
+        <button class="btn btn-secondary" id="btn-import-tax" style="background:var(--info);color:#fff">Import from Tax App</button>
+        <input type="file" id="file-import" accept=".json" class="hidden">
+        <input type="file" id="file-import-tax" accept=".json" class="hidden">
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>GitHub Gist Sync</h3>
+      <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">
+        Sync your zakat data across computers using a private GitHub Gist.
+      </p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>GitHub Token</label>
+          <div class="token-input-wrap">
+            <input type="password" id="gist-token" placeholder="ghp_...">
+            <button class="token-toggle" id="btn-toggle-token">Show</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Gist ID</label>
+          <input type="text" id="gist-id" placeholder="Paste Gist ID or leave blank to create new">
+        </div>
+      </div>
+      <div class="btn-group" style="margin-top:0.75rem">
+        <button class="btn btn-primary btn-sm" id="btn-sync-push">Push to Gist</button>
+        <button class="btn btn-secondary btn-sm" id="btn-sync-pull">Pull from Gist</button>
+        <button class="btn btn-secondary btn-sm" id="btn-create-gist">Create New Gist</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Danger Zone</h3>
+      <button class="btn btn-danger btn-sm" id="btn-clear-all">Clear All Data</button>
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<script src="zakat-engine.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
