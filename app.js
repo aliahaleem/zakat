@@ -22,9 +22,23 @@ const App = (() => {
 
   const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
 
+  function esc(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+  }
+
+  function escAttr(str) {
+    return esc(str).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+  }
+
+  let autoSaveTimer = null;
   function markDirty() {
     dirty = true;
     showSyncStatus('Unsaved changes', '');
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => { saveLocal(); showSyncStatus('Auto-saved', 'synced'); }, 3000);
   }
 
   function showSyncStatus(text, cls) {
@@ -162,6 +176,23 @@ const App = (() => {
   }
 
   // ── Import / Export ─────────────────────────────────────────────
+
+  function loadSampleData() {
+    if (typeof SAMPLE_DATA === 'undefined') {
+      showSyncStatus('Sample data file not found', 'error');
+      return;
+    }
+    const hasData = Object.keys(data).some(k => /^\d{4}$/.test(k) && data[k]?.bankAccounts?.length > 0);
+    if (hasData && !confirm('This will replace your current data with sample data. Continue?')) return;
+
+    data = JSON.parse(JSON.stringify(SAMPLE_DATA));
+    const dataYears = Object.keys(data).filter(k => /^\d{4}$/.test(k)).sort().reverse();
+    if (dataYears.length > 0) currentYear = parseInt(dataYears[0]);
+    ensureYear(currentYear);
+    saveLocal();
+    renderAll();
+    showSyncStatus('Sample data loaded', 'synced');
+  }
 
   function exportJSON() {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -375,14 +406,16 @@ const App = (() => {
       date: form.querySelector('[name="zk-pay-date"]').value,
       recipient,
       amount: parseFloat(form.querySelector('[name="zk-pay-amount"]').value) || 0,
+      type: form.querySelector('[name="zk-pay-type"]').value || 'zakat',
       method: form.querySelector('[name="zk-pay-method"]').value,
     };
-    if (!item.date || !item.recipient) return;
+    if (!item.date || !item.recipient || item.amount <= 0) return;
     yd().zakatPayments.push(item);
     markDirty(); renderPayments();
     form.querySelectorAll('input').forEach(i => i.value = '');
     form.querySelector('[name="zk-pay-recipient-select"]').value = '';
     form.querySelector('[name="zk-pay-method"]').value = '';
+    form.querySelector('[name="zk-pay-type"]').value = 'zakat';
   }
 
   // ── Recipients ──────────────────────────────────────────────────
@@ -668,7 +701,7 @@ const App = (() => {
     el.innerHTML = items.map(i => `
       <div class="list-item">
         <span style="font-size:0.85rem">${formatFn(i)}</span>
-        <button class="btn btn-sm btn-danger" onclick="App.removeItem('${collection}','${i.id}')">X</button>
+        <button class="btn btn-sm btn-danger" onclick="App.removeItem('${escAttr(collection)}','${escAttr(i.id)}')">X</button>
       </div>
     `).join('');
   }
@@ -839,8 +872,9 @@ const App = (() => {
 
     // Recipients list
     renderList('recipients-list', zk.recipients || [], 'recipients', i => {
-      const urlLink = i.url ? ` — <a href="${i.url}" target="_blank" rel="noopener" style="color:var(--primary)">${i.url}</a>` : '';
-      return `<strong>${i.name}</strong> <span style="color:var(--text-secondary);font-size:0.75rem">(${CAT_LABELS[i.category] || i.category})</span>${urlLink}<br><span style="font-size:0.78rem;color:var(--text-secondary)">Method: ${METHOD_LABELS[i.method] || i.method}${i.notes ? ' — ' + i.notes : ''}</span>`;
+      const safeUrl = i.url && /^https?:\/\//.test(i.url) ? i.url : '';
+      const urlLink = safeUrl ? ` — <a href="${escAttr(safeUrl)}" target="_blank" rel="noopener" style="color:var(--primary)">${esc(safeUrl)}</a>` : '';
+      return `<strong>${esc(i.name)}</strong> <span style="color:var(--text-secondary);font-size:0.75rem">(${esc(CAT_LABELS[i.category] || i.category)})</span>${urlLink}<br><span style="font-size:0.78rem;color:var(--text-secondary)">Method: ${esc(METHOD_LABELS[i.method] || i.method)}${i.notes ? ' — ' + esc(i.notes) : ''}</span>`;
     });
 
     populateRecipientDropdowns();
@@ -859,11 +893,14 @@ const App = (() => {
       if (stratEl) stratEl.value = zk.distributionPlan.strategy || 'equal-all';
     }
 
-    // Payments list (enhanced with method)
+    // Payments list (enhanced with method + type)
     renderList('payments-list', zk.zakatPayments, 'zakatPayments',
       i => {
-        const methodLabel = i.method ? ` via ${METHOD_LABELS[i.method] || i.method}` : '';
-        return `${i.date} — <strong>${i.recipient}</strong>: ${currency(i.amount)}${methodLabel}`;
+        const methodLabel = i.method ? ` via ${esc(METHOD_LABELS[i.method] || i.method)}` : '';
+        const typeBadge = i.type === 'sadaqah'
+          ? '<span style="font-size:0.68rem;background:var(--info-light);color:var(--info);padding:0.1rem 0.35rem;border-radius:4px;margin-left:0.3rem">SADAQAH</span>'
+          : '<span style="font-size:0.68rem;background:var(--success-light);color:var(--success);padding:0.1rem 0.35rem;border-radius:4px;margin-left:0.3rem">ZAKAT</span>';
+        return `${esc(i.date)} — <strong>${esc(i.recipient)}</strong>: ${currency(i.amount)}${methodLabel}${typeBadge}`;
       });
 
     // Payment summary
@@ -872,7 +909,8 @@ const App = (() => {
       const statusClass = result.zakatRemaining > 0 ? 'owing' : 'refund';
       summaryEl.innerHTML = `
         <div class="summary-line"><span class="label">Zakat Owing</span><span class="value">${currency(result.zakatOwing)}</span></div>
-        <div class="summary-line"><span class="label">Total Payments</span><span class="value" style="color:var(--success)">${currency(result.payments.total)}</span></div>
+        <div class="summary-line"><span class="label">Zakat Payments</span><span class="value" style="color:var(--success)">${currency(result.payments.total)}</span></div>
+        ${result.payments.sadaqahTotal > 0 ? `<div class="summary-line"><span class="label">Sadaqah (voluntary — does not reduce zakat)</span><span class="value" style="color:var(--info)">${currency(result.payments.sadaqahTotal)}</span></div>` : ''}
         <div class="summary-line total ${statusClass}">
           <span class="label">${result.zakatRemaining > 0 ? 'Remaining to Pay' : 'Overpaid / Fully Paid'}</span>
           <span class="value">${currency(Math.abs(result.zakatRemaining))}</span>
@@ -981,6 +1019,7 @@ const App = (() => {
     // Settings form auto-save
     const settingsForm = document.getElementById('zakat-settings-form');
     if (settingsForm) {
+      let settingsDebounce = null;
       settingsForm.addEventListener('input', () => {
         const zk = yd();
         zk.hawlDate = settingsForm.querySelector('[name="zk-hawl-date"]').value;
@@ -990,7 +1029,8 @@ const App = (() => {
         zk.usdToCAD = parseFloat(settingsForm.querySelector('[name="zk-usd-rate"]').value) || 1.40;
         zk.personalBaseIncome = parseFloat(settingsForm.querySelector('[name="zk-base-income"]').value) || 0;
         markDirty();
-        renderDashboard();
+        clearTimeout(settingsDebounce);
+        settingsDebounce = setTimeout(() => renderDashboard(), 400);
       });
     }
 
@@ -1007,6 +1047,7 @@ const App = (() => {
 
     // Persistence buttons
     document.getElementById('btn-save-local').addEventListener('click', saveLocal);
+    document.getElementById('btn-load-sample').addEventListener('click', loadSampleData);
     document.getElementById('btn-export').addEventListener('click', exportJSON);
     document.getElementById('btn-import').addEventListener('click', () => document.getElementById('file-import').click());
     document.getElementById('file-import').addEventListener('change', e => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
@@ -1015,6 +1056,7 @@ const App = (() => {
 
     // Gist sync
     document.getElementById('btn-sync-push').addEventListener('click', syncPush);
+    document.getElementById('btn-header-push').addEventListener('click', syncPush);
     document.getElementById('btn-sync-pull').addEventListener('click', syncPull);
     document.getElementById('btn-create-gist').addEventListener('click', createGist);
 

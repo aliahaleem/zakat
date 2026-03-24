@@ -22,7 +22,7 @@
     <div class="header-actions">
       <span id="sync-status" class="sync-status">Not saved</span>
       <button class="btn btn-sm btn-secondary" id="btn-save-local">Save Local</button>
-      <button class="btn btn-sm btn-primary" id="btn-sync-push">Push to GitHub</button>
+      <button class="btn btn-sm btn-primary" id="btn-header-push">Push to GitHub</button>
     </div>
   </div>
   <nav>
@@ -454,6 +454,13 @@
         <input type="number" name="zk-pay-amount" step="0.01" placeholder="0.00">
       </div>
       <div class="form-group">
+        <label>Type</label>
+        <select name="zk-pay-type">
+          <option value="zakat">Zakat (obligatory)</option>
+          <option value="sadaqah">Sadaqah (voluntary)</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>Method</label>
         <select name="zk-pay-method" id="pay-method-select">
           <option value="">—</option>
@@ -499,6 +506,7 @@
     <div class="settings-section">
       <h3>Data Management</h3>
       <div class="btn-group">
+        <button class="btn btn-secondary" id="btn-load-sample" style="background:var(--primary);color:#fff">Load Sample Data</button>
         <button class="btn btn-secondary" id="btn-export">Export JSON</button>
         <button class="btn btn-secondary" id="btn-import">Import JSON</button>
         <button class="btn btn-secondary" id="btn-import-tax" style="background:var(--info);color:#fff">Import from Tax App</button>
@@ -543,6 +551,7 @@
 </main>
 
 <script src="zakat-engine.js"></script>
+<script src="sample-data.js"></script>
 <script src="app.js"></script>
 
 </body>

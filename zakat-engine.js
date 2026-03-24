@@ -100,8 +100,14 @@ const ZakatEngine = (() => {
   }
 
   function calcPaymentsTotal(payments = []) {
-    const total = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-    return { items: payments, total: round2(total) };
+    let zakatTotal = 0;
+    let sadaqahTotal = 0;
+    payments.forEach(p => {
+      const amt = parseFloat(p.amount) || 0;
+      if (p.type === 'sadaqah') sadaqahTotal += amt;
+      else zakatTotal += amt;
+    });
+    return { items: payments, total: round2(zakatTotal), sadaqahTotal: round2(sadaqahTotal), grandTotal: round2(zakatTotal + sadaqahTotal) };
   }
 
   function calcFullZakat(zakatData) {
